@@ -68,12 +68,14 @@ runParseResult pr = unPR pr emptyPRState initialCtx failure success
   where
     initialCtx = PRContext PUnknownSource
 
-    failure (PRState warns [] v) = (warns, Left (v, PErrorWithSource PUnknownSource (PError zeroPos "panic") :| []))
-    failure (PRState warns (err : errs) v) = (warns, Left (v, err :| errs))
+    failure (PRState warns [] v) = (sortWarns warns, Left (v, PErrorWithSource PUnknownSource (PError zeroPos "panic") :| []))
+    failure (PRState warns (err : errs) v) = (sortWarns warns, Left (v, err :| errs))
 
-    success (PRState warns [] _) x = (warns, Right x)
+    success (PRState warns [] _) x = (sortWarns warns, Right x)
     -- If there are any errors, don't return the result
-    success (PRState warns (err : errs) v) _ = (warns, Left (v, err :| errs))
+    success (PRState warns (err : errs) v) _ = (sortWarns warns, Left (v, err :| errs))
+
+    sortWarns = sortBy (comparing (pwarningPosition . pwarning))
 
 -- | Chain parsing operations that involve 'IO' actions.
 liftParseResult :: (a -> IO (ParseResult src b)) -> ParseResult src a -> IO (ParseResult src b)
